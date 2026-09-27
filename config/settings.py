@@ -31,6 +31,9 @@ DEBUG = True
 ALLOWED_HOSTS = []
 
 
+# Аутентификация
+AUTH_USER_MODEL = 'users.User'
+
 # Application definition
 
 INSTALLED_APPS = [
@@ -44,6 +47,10 @@ INSTALLED_APPS = [
     'rest_framework',
     'users',
 ]
+
+# Media
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -135,5 +142,3 @@ MAILERS = {
     },
 }
 
-# Аутентификация
-AUTH_USER_MODEL = 'users.User'
