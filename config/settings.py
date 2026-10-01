@@ -50,12 +50,14 @@ INSTALLED_APPS = [
     'materials',
 ]
 
-# делаем вручную поэтому коментим
-#REST_FRAMEWORK = {
-#    'DEFAULT_FILTER_BACKENDS': (
-#        'django_filters.rest_framework.DjangoFilterBackend',
-#    ),
-#}
+# Определяем фильтры по умолчанию
+REST_FRAMEWORK = {
+    "DEFAULT_FILTER_BACKENDS": (
+        "django_filters.rest_framework.DjangoFilterBackend",
+        "rest_framework.filters.SearchFilter",
+        "rest_framework.filters.OrderingFilter",
+    ),
+}
 
 # Media
 MEDIA_URL = '/media/'
