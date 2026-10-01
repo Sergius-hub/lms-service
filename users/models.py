@@ -1,5 +1,9 @@
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db import models
+from django.core.exceptions import ValidationError
+
+
+from materials.models import Course, Lesson
 
 class UserManager(BaseUserManager):
     """Кастомный менеджер для модели User"""
@@ -79,4 +83,67 @@ class User(AbstractUser):
         ordering = ["id"]
 
     def __str__(self):
-        return self.email
+        return f"\"{self.email}\": {self.first_name}"
+
+
+class Payment(models.Model):
+    """Модель Платежи"""
+
+    class Method(models.TextChoices):
+        CARD = "card", "Банковская карта"
+        ACCOUNT = "account", "Счет банка"
+        CASH = "cash", "Наличные"
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name="payments",
+        verbose_name="Пользователь"
+    )
+
+    paid_at = models.DateTimeField(
+        verbose_name="Дата платежа"
+    )
+
+    course = models.ForeignKey(
+        Course,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name="payments",
+        verbose_name="Курс",
+    )
+
+    lesson = models.ForeignKey(
+        Lesson,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name="payments",
+        verbose_name="Урок"
+    )
+
+    amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0.00,
+        verbose_name="Сумма"
+    )
+
+    method = models.CharField(
+        max_length=20,
+        choices=Method.choices,
+        default=Method.CARD,
+        verbose_name="Способ оплаты"
+    )
+
+    def __str__(self):
+        user = self.user if self.user else "-"
+        return f"Платеж от {self.paid_at}, на сумму: {self.amount}, от пользователя: {user}"
+
+    class Meta:
+        verbose_name = "Платеж"
+        verbose_name_plural = "Платежи"
+        ordering = ["-paid_at"]

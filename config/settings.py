@@ -44,10 +44,18 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
+    'django_filters',
     'rest_framework',
     'users',
     'materials',
 ]
+
+# делаем вручную поэтому коментим
+#REST_FRAMEWORK = {
+#    'DEFAULT_FILTER_BACKENDS': (
+#        'django_filters.rest_framework.DjangoFilterBackend',
+#    ),
+#}
 
 # Media
 MEDIA_URL = '/media/'

@@ -1,0 +1,20 @@
+[
+{
+    "model": "materials.course",
+    "pk": 1,
+    "fields": {
+        "name": "course 1",
+        "preview": "",
+        "description": "Курс о ..."
+    }
+},
+{
+    "model": "materials.course",
+    "pk": 2,
+    "fields": {
+        "name": "course 2",
+        "preview": "",
+        "description": "Курс о ..."
+    }
+}
+]
