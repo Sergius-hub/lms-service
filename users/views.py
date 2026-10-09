@@ -1,11 +1,14 @@
-from rest_framework.request import Request
+from rest_framework.permissions import AllowAny
 from rest_framework import viewsets
+from rest_framework.generics import CreateAPIView
 
-from users.models import Payment
-from users.serializers import PaymentSerializer
+from users.models import Payment, User
+from users.serializers import PaymentSerializer, UserSerializer
+
 
 # Платежи
 class PaymentViewSet(viewsets.ModelViewSet):
+    """CRUD для payment."""
     queryset = Payment.objects.all()
     serializer_class = PaymentSerializer
 
@@ -37,3 +40,13 @@ class PaymentViewSet(viewsets.ModelViewSet):
             queryset = queryset.none()
 
         return queryset
+
+
+# Пользователи
+class UserCreateAPIView(CreateAPIView):
+    serializer_class = UserSerializer
+    permission_classes = (AllowAny,)
+
+    def perform_create(self, serializer):
+        serializer.save(is_active=True)
+
