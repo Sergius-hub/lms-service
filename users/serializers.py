@@ -19,6 +19,7 @@ class UserSerializer(serializers.ModelSerializer):
         read_only_fields = ("id",)
 
     def create(self, validated_data):
+        """Хэшируем пароль перед сохранением."""
         password = validated_data.pop("password")
         user = User(**validated_data)
         user.set_password(password)

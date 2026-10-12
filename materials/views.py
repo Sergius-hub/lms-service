@@ -12,8 +12,12 @@ class CourseViewSet(viewsets.ModelViewSet):
     #queryset = Course.objects.all()
 
     def get_queryset(self):
+        """Фильтруем queryset."""
         user = self.request.user
         qs = Course.objects.select_related("owner")
+
+        if not user.is_authenticated:
+            return qs.none()
 
         if user.is_staff or user.is_superuser or user.groups.filter(name="moderators").exists():
             return qs
@@ -46,18 +50,69 @@ class LessonCreateAPIView(generics.CreateAPIView):
 
 class LessonListAPIView(generics.ListAPIView):
     serializer_class = LessonSerializer
-    queryset = Lesson.objects.all()
+    permission_classes = (IsAuthenticated, IsModerator | IsOwner)
+
+    def get_queryset(self):
+        """Фильтруем queryset."""
+        user = self.request.user
+        qs = Lesson.objects.select_related("owner")
+
+        if not user.is_authenticated:
+            return qs.none()
+
+        if user.is_staff or user.is_superuser or user.groups.filter(name="moderators").exists():
+            return qs
+
+        return qs.filter(owner=user)
 
 class LessonRetrieveAPIView(generics.RetrieveAPIView):
     serializer_class = LessonSerializer
-    queryset = Lesson.objects.all()
+    permission_classes = (IsAuthenticated, IsModerator | IsOwner)
+
+    def get_queryset(self):
+        """Фильтруем queryset."""
+        user = self.request.user
+        qs = Lesson.objects.select_related("owner")
+
+        if not user.is_authenticated:
+            return qs.none()
+
+        if user.is_staff or user.is_superuser or user.groups.filter(name="moderators").exists():
+            return qs
+
+        return qs.filter(owner=user)
 
 class LessonUpdateAPIView(generics.UpdateAPIView):
     serializer_class = LessonSerializer
-    queryset = Lesson.objects.all()
+    permission_classes = (IsAuthenticated, IsModerator | IsOwner)
+
+    def get_queryset(self):
+        """Фильтруем queryset."""
+        user = self.request.user
+        qs = Lesson.objects.select_related("owner")
+
+        if not user.is_authenticated:
+            return qs.none()
+
+        if user.is_staff or user.is_superuser or user.groups.filter(name="moderators").exists():
+            return qs
+
+        return qs.filter(owner=user)
 
 class LessonDestroyAPIView(generics.DestroyAPIView):
     serializer_class = LessonSerializer
-    queryset = Lesson.objects.all()
-    permission_classes = (IsAuthenticated, ~IsModerator)
+    permission_classes = (IsAuthenticated, ~IsModerator | IsOwner)
+
+    def get_queryset(self):
+        """Фильтруем queryset."""
+        user = self.request.user
+        qs = Lesson.objects.select_related("owner")
+
+        if not user.is_authenticated:
+            return qs.none()
+
+        if user.is_staff or user.is_superuser or user.groups.filter(name="moderators").exists():
+            return qs
+
+        return qs.filter(owner=user)
 
