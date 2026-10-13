@@ -50,6 +50,7 @@ class BaseUserMixin():
     queryset = User.objects.all()
 
     def get_queryset(self):
+        """Переопределяем query set для вывода только своих записей."""
         user = self.request.user
         qs = super().get_queryset()
 
@@ -64,6 +65,7 @@ class BaseUserMixin():
         return qs.filter(pk=user.pk)
 
     def get_object(self):
+        """Переопределяем get_object для вывода своего сообщения."""
         try:
             return super().get_object()
         except Http404:
