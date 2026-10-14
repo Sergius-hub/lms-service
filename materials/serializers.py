@@ -4,7 +4,8 @@ from materials.models import Course, Lesson
 class LessonSerializer(serializers.ModelSerializer):
     class Meta:
         model = Lesson
-        fields = "__all__"
+        fields = ("id", "name", "preview", "description", "course", "reference", "owner")
+        read_only_fields = ("id", "owner")
 
 
 class CourseSerializer(serializers.ModelSerializer):
@@ -17,4 +18,5 @@ class CourseSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Course
-        fields = ("id", "name", "preview", "description", "lesson_count", "lessons")
+        fields = ("id", "name", "preview", "description", "lesson_count", "lessons", "owner")
+        read_only_fields = ("id", "lesson_count", "lessons", "owner")
