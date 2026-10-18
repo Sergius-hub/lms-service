@@ -28,7 +28,7 @@ class Course(models.Model):
         blank=True,
         null=True,
         related_name="courses",
-        verbose_name="Пользователь"
+        verbose_name="Владелец"
     )
 
     class Meta:
