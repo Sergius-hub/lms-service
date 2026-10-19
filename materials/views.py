@@ -14,6 +14,7 @@ from materials.paginators import MyPagination
 # Курсы
 class CourseViewSet(viewsets.ModelViewSet):
     serializer_class = CourseSerializer
+    pagination_class = MyPagination
     #queryset = Course.objects.all()
     #permission_classes = [AllowAny,]
     def get_queryset(self):
