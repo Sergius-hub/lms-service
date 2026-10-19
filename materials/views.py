@@ -9,7 +9,7 @@ from rest_framework import status
 from materials.models import Course, Lesson, Subscription
 from materials.serializers import CourseSerializer, LessonSerializer
 from users.permissions import IsModerator, IsOwner
-
+from materials.paginators import MyPagination
 
 # Курсы
 class CourseViewSet(viewsets.ModelViewSet):
@@ -56,6 +56,7 @@ class LessonCreateAPIView(generics.CreateAPIView):
 class LessonListAPIView(generics.ListAPIView):
     serializer_class = LessonSerializer
     permission_classes = (IsAuthenticated, IsModerator | IsOwner)
+    pagination_class = MyPagination
 
     def get_queryset(self):
         """Фильтруем queryset."""
