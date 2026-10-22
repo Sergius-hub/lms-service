@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'users',
     'materials',
+    'drf_yasg',
 ]
 
 # Определяем фильтры по умолчанию
