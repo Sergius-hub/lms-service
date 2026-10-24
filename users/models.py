@@ -139,6 +139,13 @@ class Payment(models.Model):
         verbose_name="Способ оплаты"
     )
 
+    link = models.URLField(
+        max_length=400,
+        blank=True,
+        null=True,
+        verbose_name="Ссылка на оплату"
+    )
+
     def __str__(self):
         user = self.user if self.user else "-"
         return f"Платеж от {self.paid_at}, на сумму: {self.amount}, от пользователя: {user}"
