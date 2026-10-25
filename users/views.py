@@ -1,11 +1,18 @@
-from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
+from django.shortcuts import get_object_or_404
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework import status
 from rest_framework import viewsets
 from rest_framework import generics
 from django.http import Http404
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
+from materials.models import Course
 from users.models import Payment, User
 from users.serializers import PaymentSerializer, UserSerializer
 from users.permissions import IsSelfOrAdmin
+from users.services import create_stripe_price, create_stripe_session
+
 
 # Платежи
 class PaymentViewSet(viewsets.ModelViewSet):
@@ -19,7 +26,7 @@ class PaymentViewSet(viewsets.ModelViewSet):
     ordering = ["paid_at"]
 
     def get_queryset(self):
-        queryset = super().get_queryset()
+        queryset = super().get_queryset().filter(user=self.request.user)
         course = self.request.GET.get("course")
         lesson = self.request.GET.get("lesson")
 
@@ -42,6 +49,48 @@ class PaymentViewSet(viewsets.ModelViewSet):
 
         return queryset
 
+class CreateStripeSessionCheckoutAPIView(APIView):
+    """Создание сессии stripe checkout."""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+
+        course_id = request.data.get("course_id")
+        if not course_id:
+            return Response(
+                { "error": "course_id обязателен." },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        course = get_object_or_404(Course, pk=course_id)
+
+        if not course.price:
+            return Response(
+                { "error": "У курса не установлена цена." },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # 1. Получаем Price в Stripe
+        price = create_stripe_price( course.price, course.name )
+
+        # 2. Checkout-сессия
+        session_id, session_url = create_stripe_session(price)
+
+        # 3. Создаем объект Payment (pending) в БД
+        payment = Payment.objects.create(
+            user=request.user,
+            course=course,
+            amount=course.price,
+            method=Payment.Method.CARD,
+            status=Payment.Status.PENDING,
+            stripe_session_id=session_id,
+            link=session_url,
+        )
+
+        return Response(
+            { "payment_id": payment.id, "checkout_url": session_url },
+            status=status.HTTP_201_CREATED,
+        )
 
 # Пользователи
 class BaseUserMixin():
