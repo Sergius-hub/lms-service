@@ -17,6 +17,7 @@ dependencies = [
     "djangorestframework-simplejwt (>=5.5.1,<6.0.0)",
     "drf-yasg (>=1.21.18,<2.0.0)",
     "coverage (>=7.17.0,<8.0.0)",
+    "stripe (>=16.0.0,<17.0.0)",
 ]
 
 
