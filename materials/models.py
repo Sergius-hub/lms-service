@@ -11,6 +11,11 @@ class Course(models.Model):
         verbose_name="Название курса",
     )
 
+    price = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0.00,
+        verbose_name="Цена курса",
+    )
+
     preview = models.ImageField(
         upload_to="images/materials/preview/",
         blank=True,

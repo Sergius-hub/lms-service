@@ -8,6 +8,7 @@ from users.views import (
     UserRetrieveAPIView,
     UserUpdateAPIView,
     UserDestroyAPIView,
+    CreateStripeSessionCheckoutAPIView,
 )
 
 from rest_framework_simplejwt.views import (
@@ -31,4 +32,6 @@ urlpatterns = [
     path('user/<int:pk>/update/', UserUpdateAPIView.as_view(), name='users-update'),
     path('user/<int:pk>/delete/', UserDestroyAPIView.as_view(), name='users-delete'),
 
+    # Stripe Checkout
+    path('payment/checkout/', CreateStripeSessionCheckoutAPIView.as_view(), name='payment-checkout'),
 ] + router.urls

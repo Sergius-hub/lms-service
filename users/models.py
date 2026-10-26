@@ -94,6 +94,11 @@ class Payment(models.Model):
         ACCOUNT = "account", "Счет банка"
         CASH = "cash", "Наличные"
 
+    class Status( models.TextChoices ):
+        PENDING = "pending", "Ожидает"
+        SUCCEEDED = "succeeded", "Оплачен"
+        FAILED = "failed", "Ошибка"
+
     user = models.ForeignKey(
         User,
         on_delete=models.SET_NULL,
@@ -104,7 +109,9 @@ class Payment(models.Model):
     )
 
     paid_at = models.DateTimeField(
-        verbose_name="Дата платежа"
+        verbose_name="Дата платежа",
+        blank = True,
+        null = True,
     )
 
     course = models.ForeignKey(
@@ -137,6 +144,23 @@ class Payment(models.Model):
         choices=Method.choices,
         default=Method.CARD,
         verbose_name="Способ оплаты"
+    )
+
+    status = models.CharField(
+        max_length=20, choices=Status.choices,
+        default=Status.PENDING, verbose_name="Статус",
+    )
+
+    stripe_session_id = models.CharField(
+        max_length=255, blank=True, db_index=True,
+        verbose_name="ID сессии Stripe",
+    )
+
+    link = models.URLField(
+        max_length=500,
+        blank=True,
+        null=True,
+        verbose_name="Ссылка на оплату"
     )
 
     def __str__(self):

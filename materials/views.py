@@ -31,7 +31,7 @@ class CourseViewSet(viewsets.ModelViewSet):
         return qs.filter(owner=user)
 
     def get_permissions(self):
-
+        """Получаем permission в зависимости от действия."""
         if self.action == "list":
             self.permission_classes = (IsAuthenticated,)
         elif self.action == "create":
@@ -44,6 +44,7 @@ class CourseViewSet(viewsets.ModelViewSet):
         return super().get_permissions()
 
     def perform_create(self, serializer):
+        """Перед созданием присваиваем owner текущего пользователя."""
         serializer.save(owner=self.request.user)
 
 # Уроки
