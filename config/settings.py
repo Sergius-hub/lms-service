@@ -161,11 +161,23 @@ STATIC_URL = 'static/'
 # Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
 
+
+# Почта
 MAILERS = {
     'default': {
-        'BACKEND': 'django.core.mail.backends.console.EmailBackend',
+        'BACKEND': 'django.core.mail.backends.smtp.EmailBackend',
+        'OPTIONS': {
+            'host': os.getenv("EMAIL_HOST"),
+            'port': int(os.getenv("EMAIL_PORT", 465)),
+            'use_tls': os.getenv("EMAIL_USE_TLS") == "True",
+            'use_ssl': os.getenv("EMAIL_USE_SSL") == "True",
+            'username': os.getenv("EMAIL_HOST_USER"),
+            'password': os.getenv("EMAIL_HOST_PASSWORD")
+
+        }
     },
 }
+DEFAULT_FROM_EMAIL = MAILERS["default"]["OPTIONS"]["username"]
 
 # STRIPE
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
@@ -188,6 +200,7 @@ CELERY_TASK_TIME_LIMIT = 30 * 60
 # Форматы
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
+
 
 
 

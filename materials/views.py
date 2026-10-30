@@ -150,6 +150,7 @@ class SubscriptionAPIView(APIView):
         else:
             Subscription.objects.create(user=user, course=course)
             message = "Подписка добавлена."
+
             is_subscribed = True
 
         return Response(
