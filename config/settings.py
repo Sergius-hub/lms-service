@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     'users',
     'materials',
     'drf_yasg',
+    'django_celery_beat',
 ]
 
 # Определяем фильтры по умолчанию
