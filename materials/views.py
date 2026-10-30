@@ -152,7 +152,7 @@ class SubscriptionAPIView(APIView):
             Subscription.objects.create(user=user, course=course)
             message = "Подписка добавлена."
             # Отправляем письмо через отложенную задачу Celery, Redis
-            send_subscription_email.delay(user.pk)
+            send_subscription_email.delay(user.pk, course.name)
             is_subscribed = True
 
         return Response(

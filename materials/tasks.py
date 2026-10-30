@@ -4,11 +4,11 @@ from users.models import User
 from config.settings import DEFAULT_FROM_EMAIL
 
 @shared_task
-def send_subscription_email(user_pk):
+def send_subscription_email(user_pk, course_name):
     user = User.objects.get(pk=user_pk)
     send_mail(
         subject="Подписка на курс",
-        message="Вы подписаны на курс.",
+        message=f"Вы подписаны на курс: {course_name}.",
         from_email=DEFAULT_FROM_EMAIL,
         recipient_list=[user.email],
         fail_silently=False,
