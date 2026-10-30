@@ -3,6 +3,6 @@ from users.models import User
 
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):
-    list_display = ('email', 'is_staff', 'is_superuser', 'is_active')
+    list_display = ('email', 'is_staff', 'is_superuser', 'is_active', 'last_login')
 
     ordering = ('-id',)

@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     'users',
     'materials',
     'drf_yasg',
+    'django_celery_beat',
 ]
 
 # Определяем фильтры по умолчанию
@@ -71,6 +72,7 @@ REST_FRAMEWORK = {
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+    'TOKEN_OBTAIN_SERIALIZER': 'users.serializers.CustomTokenObtainPairSerializer',
 }
 
 # Media
@@ -161,12 +163,48 @@ STATIC_URL = 'static/'
 # Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
 
+
+# Почта
 MAILERS = {
     'default': {
-        'BACKEND': 'django.core.mail.backends.console.EmailBackend',
+        'BACKEND': 'django.core.mail.backends.smtp.EmailBackend',
+        'OPTIONS': {
+            'host': os.getenv("EMAIL_HOST"),
+            'port': int(os.getenv("EMAIL_PORT", 465)),
+            'use_tls': os.getenv("EMAIL_USE_TLS") == "True",
+            'use_ssl': os.getenv("EMAIL_USE_SSL") == "True",
+            'username': os.getenv("EMAIL_HOST_USER"),
+            'password': os.getenv("EMAIL_HOST_PASSWORD")
+
+        }
     },
 }
+DEFAULT_FROM_EMAIL = MAILERS["default"]["OPTIONS"]["username"]
 
 # STRIPE
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
 STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
+
+# Redis
+REDIS_PASSWORD = os.getenv("REDIS_PASSWORD")
+
+# Celery
+# URL-адрес брокера сообщений
+CELERY_BROKER_URL = f'redis://:{REDIS_PASSWORD}@localhost:6379/0'
+# URL-адрес брокера результатов, также Redis
+CELERY_RESULT_BACKEND = f'redis://:{REDIS_PASSWORD}@localhost:6379/1'
+# Часовой пояс для работы Celery
+CELERY_TIMEZONE = TIME_ZONE
+# Флаг отслеживания выполнения задач
+CELERY_TASK_TRACK_STARTED = True
+# Максимальное время на выполнение задачи
+CELERY_TASK_TIME_LIMIT = 30 * 60
+# Форматы
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+
+# Celery-beat
+
+
+
+

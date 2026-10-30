@@ -1,6 +1,7 @@
 from django.urls import path
 from rest_framework.routers import DefaultRouter
 from users.apps import UsersConfig
+from rest_framework.permissions import AllowAny
 from users.views import (
     PaymentViewSet,
     UserCreateAPIView,

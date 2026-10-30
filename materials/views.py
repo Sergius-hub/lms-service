@@ -8,6 +8,7 @@ from rest_framework import status
 
 from materials.models import Course, Lesson, Subscription
 from materials.serializers import CourseSerializer, LessonSerializer
+from materials.tasks import send_subscription_email
 from users.permissions import IsModerator, IsOwner
 from materials.paginators import MyPagination
 
@@ -150,6 +151,8 @@ class SubscriptionAPIView(APIView):
         else:
             Subscription.objects.create(user=user, course=course)
             message = "Подписка добавлена."
+            # Отправляем письмо через отложенную задачу Celery, Redis
+            send_subscription_email.delay(user.pk, course.name)
             is_subscribed = True
 
         return Response(

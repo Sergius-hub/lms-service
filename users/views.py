@@ -26,6 +26,9 @@ class PaymentViewSet(viewsets.ModelViewSet):
     ordering = ["paid_at"]
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return Payment.objects.none()
+
         queryset = super().get_queryset().filter(user=self.request.user)
         course = self.request.GET.get("course")
         lesson = self.request.GET.get("lesson")
