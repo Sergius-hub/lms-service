@@ -1,12 +1,11 @@
 from datetime import timedelta
 from django.utils import timezone
 
-
 from celery import shared_task
 from django.core.mail import send_mail
 from users.models import User
 from config.settings import DEFAULT_FROM_EMAIL
-
+from django.core.mail import mailers, EmailMultiAlternatives
 
 @shared_task
 def send_subscription_email(user_pk, course_name):
@@ -18,6 +17,26 @@ def send_subscription_email(user_pk, course_name):
         recipient_list=[user.email],
         fail_silently=False,
     )
+
+
+@shared_task
+def send_bulk(subject, message, recipient_list, using="default"):
+    """Массово рассылаем письма"""
+    if not recipient_list:
+        return 0
+
+    mailer = mailers[using]
+    emails = [
+        EmailMultiAlternatives(
+            subject=subject,
+            body=message,
+            from_email=DEFAULT_FROM_EMAIL,
+            to=[addr],
+        )
+        for addr in recipient_list
+    ]
+
+    return mailer.send_messages(emails)
 
 @shared_task
 def deactivate_inactive_users(minutes=1):

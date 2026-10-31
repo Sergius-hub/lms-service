@@ -171,11 +171,12 @@ MAILERS = {
         'OPTIONS': {
             'host': os.getenv("EMAIL_HOST"),
             'port': int(os.getenv("EMAIL_PORT", 465)),
-            'use_tls': os.getenv("EMAIL_USE_TLS") == "True",
-            'use_ssl': os.getenv("EMAIL_USE_SSL") == "True",
+            'use_tls': os.getenv("EMAIL_USE_TLS", "False") == "True",
+            'use_ssl': os.getenv("EMAIL_USE_SSL", "True") == "True",
             'username': os.getenv("EMAIL_HOST_USER"),
-            'password': os.getenv("EMAIL_HOST_PASSWORD")
-
+            'password': os.getenv("EMAIL_HOST_PASSWORD"),
+            'fail_silently': True,
+            'timeout': int(os.getenv("EMAIL_TIMEOUT", 10)),
         }
     },
 }

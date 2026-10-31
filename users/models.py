@@ -83,7 +83,7 @@ class User(AbstractUser):
         ordering = ["id"]
 
     def __str__(self):
-        return f"\"{self.email}\": {self.first_name}"
+        return f"{self.email}"
 
 
 class Payment(models.Model):

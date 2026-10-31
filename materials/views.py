@@ -1,14 +1,15 @@
 from django.shortcuts import get_object_or_404
 
 from rest_framework import viewsets, generics
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 
 from materials.models import Course, Lesson, Subscription
 from materials.serializers import CourseSerializer, LessonSerializer
-from materials.tasks import send_subscription_email
+from materials.tasks import send_subscription_email, send_bulk
+from users.models import User
 from users.permissions import IsModerator, IsOwner
 from materials.paginators import MyPagination
 
@@ -47,6 +48,25 @@ class CourseViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         """Перед созданием присваиваем owner текущего пользователя."""
         serializer.save(owner=self.request.user)
+
+    def perform_update(self, serializer):
+        """Перед обновлением"""
+        course = serializer.instance
+
+        # Получаем query set (qs) пользователей подписавшихся на курс
+        subscribers = User.objects.filter(
+            subscriptions__course=course
+        ).distinct()
+
+        # Если qs не пуст, получаем список адресов кому надо направить письмо
+        if subscribers.exists():
+            recipient_list = [str(u.email) for u in subscribers]
+
+        send_bulk.delay("Курс обновлен", "Курс на который вы подписалиь был обновлён", recipient_list)
+
+        serializer.save()
+
+
 
 # Уроки
 class LessonCreateAPIView(generics.CreateAPIView):
