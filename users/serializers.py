@@ -1,5 +1,6 @@
+from django.utils import timezone
 from rest_framework import serializers
-
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from users.models import Payment, User
 
 
@@ -25,3 +26,16 @@ class UserSerializer(serializers.ModelSerializer):
         user.set_password(password)
         user.save()
         return user
+
+
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    """Сериализатор для обновления поля last_login при логине пользователя"""
+    def validate(self, attrs):
+        data = super().validate(attrs)
+
+        # Обновляем last_login
+        user = self.user
+        user.last_login = timezone.now()
+        user.save(update_fields=["last_login"])
+
+        return data
