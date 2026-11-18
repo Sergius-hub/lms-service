@@ -1,6 +1,6 @@
 .git
 .gitignore
-__pycache__
+__pycache__/
 *.pyc
 *.pyo
 *.pyd
@@ -16,3 +16,5 @@ htmlcov
 .vscode
 Dockerfile
 .dockerignore
+docker-compose*.yml
+compose*.yml
