@@ -1,7 +1,17 @@
 services:
-  web:
-    build: .
-    ports:
-      - "8080:8000"
-    restart: unless-stopped
-
+  db:
+    image: postgres:18-alpine
+    env_file:
+      -  .env
+    expose:
+      -  "5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+volumes:
+  postgres_data:
