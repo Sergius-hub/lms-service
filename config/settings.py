@@ -187,13 +187,13 @@ STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
 STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
 
 # Redis
-REDIS_PASSWORD = os.getenv("REDIS_PASSWORD")
+REDIS_PASSWORD = os.environ.get("REDIS_PASSWORD")
 
 # Celery
 # URL-адрес брокера сообщений
-CELERY_BROKER_URL = f'redis://:{REDIS_PASSWORD}@localhost:6379/0'
+CELERY_BROKER_URL = f'redis://:{REDIS_PASSWORD}@redis:6379/0'
 # URL-адрес брокера результатов, также Redis
-CELERY_RESULT_BACKEND = f'redis://:{REDIS_PASSWORD}@localhost:6379/1'
+CELERY_RESULT_BACKEND = f'redis://:{REDIS_PASSWORD}@redis:6379/1'
 # Часовой пояс для работы Celery
 CELERY_TIMEZONE = TIME_ZONE
 # Флаг отслеживания выполнения задач
