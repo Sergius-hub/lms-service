@@ -115,9 +115,9 @@ WSGI_APPLICATION = 'config.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('DB_NAME', 'db_name'),
-        'USER': os.environ.get('DB_USER', 'db_user'),
-        'PASSWORD': os.environ.get('DB_PASSWORD', ''),
+        'NAME': os.environ.get('POSTGRES_DB', 'db_name'),
+        'USER': os.environ.get('POSTGRES_USER', 'db_user'),
+        'PASSWORD': os.environ.get('POSTGRES_PASSWORD', ''),
         'HOST': os.environ.get('DB_HOST', 'localhost'),
         'PORT': os.environ.get('DB_PORT', '5432'),
     }
@@ -183,17 +183,17 @@ MAILERS = {
 DEFAULT_FROM_EMAIL = MAILERS["default"]["OPTIONS"]["username"]
 
 # STRIPE
-STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
-STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
+STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY")
+STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET")
 
 # Redis
-REDIS_PASSWORD = os.getenv("REDIS_PASSWORD")
+REDIS_PASSWORD = os.environ.get("REDIS_PASSWORD")
 
 # Celery
 # URL-адрес брокера сообщений
-CELERY_BROKER_URL = f'redis://:{REDIS_PASSWORD}@localhost:6379/0'
+CELERY_BROKER_URL = f'redis://:{REDIS_PASSWORD}@redis:6379/0'
 # URL-адрес брокера результатов, также Redis
-CELERY_RESULT_BACKEND = f'redis://:{REDIS_PASSWORD}@localhost:6379/1'
+CELERY_RESULT_BACKEND = f'redis://:{REDIS_PASSWORD}@redis:6379/1'
 # Часовой пояс для работы Celery
 CELERY_TIMEZONE = TIME_ZONE
 # Флаг отслеживания выполнения задач
