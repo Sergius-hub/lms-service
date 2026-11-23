@@ -1,0 +1,157 @@
+name: CI/CD Django + Compose
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+env:
+  COMPOSE_FILE: docker-compose.yml
+  COMPOSE_PROJECT_NAME: django_ci
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ─────────────────────────────────────────────
+      # 1. Генерируем .env с уникальными паролями
+      # ─────────────────────────────────────────────
+      - name: Generate .env for CI
+        run: |
+          set -euo pipefail
+          PG_PASS=$(openssl rand -hex 16)
+          REDIS_PASS=$(openssl rand -hex 16)
+          DJANGO_KEY=$(openssl rand -hex 32)
+
+          cat > .env <<EOF
+          DJANGO_SECRET_KEY=${DJANGO_KEY}
+          DJANGO_DEBUG=False
+          POSTGRES_DB=test_db
+          POSTGRES_USER=test_user
+          POSTGRES_PASSWORD=${PG_PASS}
+          POSTGRES_HOST=db
+          POSTGRES_PORT=5432
+          REDIS_PASSWORD=${REDIS_PASS}
+          REDIS_URL=redis://:${REDIS_PASS}@redis:6379/0
+          CELERY_BROKER_URL=redis://:${REDIS_PASS}@redis:6379/0
+          EOF
+
+          chmod 600 .env
+
+      # ─────────────────────────────────────────────
+      # 2. Валидация: compose видит пароли, не пустые
+      # ─────────────────────────────────────────────
+      - name: Validate compose config
+        run: |
+          set -euo pipefail
+          docker compose config > /dev/null
+
+          if docker compose config | grep -qE 'requirepass\s+($|"")'; then
+            echo "::error::REDIS_PASSWORD is empty in compose config"
+            exit 1
+          fi
+
+          if docker compose config | grep -qE 'POSTGRES_PASSWORD:\s*($|"")'; then
+            echo "::error::POSTGRES_PASSWORD is empty in compose config"
+            exit 1
+          fi
+
+          echo "✅ Compose config validated"
+
+      # ─────────────────────────────────────────────
+      # 3. Сборка и запуск
+      # ─────────────────────────────────────────────
+      - name: Build images
+        run: docker compose build
+
+      - name: Start all services
+        run: docker compose up -d
+
+      - name: Wait for db + redis healthy
+        run: |
+          set -euo pipefail
+          for i in {1..30}; do
+            unhealthy=$(docker compose ps --format json \
+              | jq -r 'select(.Health != "healthy" and .State == "running") | .Service' \
+              | wc -l)
+            if [ "$unhealthy" -eq 0 ]; then
+              echo "✅ All services healthy"
+              exit 0
+            fi
+            echo "⏳ Waiting... ($i/30)"
+            sleep 2
+          done
+          echo "::error::Services did not become healthy in 60s"
+          docker compose ps
+          exit 1
+
+      # ─────────────────────────────────────────────
+      # 4. Миграции + тесты через Django
+      # ─────────────────────────────────────────────
+      - name: Run migrations
+        run: docker compose exec -T web python manage.py migrate --noinput
+
+      - name: Run Django tests
+        run: docker compose exec -T web python manage.py test --verbosity=2
+
+      # ─────────────────────────────────────────────
+      # 5. Диагностика и очистка
+      # ─────────────────────────────────────────────
+      - name: Show logs on failure
+        if: failure()
+        run: docker compose logs --tail=200
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v
+
+  deploy:
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          script_stop: true
+          script: |
+            set -euo pipefail
+            cd ${{ secrets.DEPLOY_PATH }}
+
+            # Проверяем, что прод-.env на месте
+            if [ ! -f .env ]; then
+              echo "❌ .env not found in $(pwd)"
+              echo "Create it manually on the server before first deploy"
+              exit 1
+            fi
+
+            git fetch --all
+            git reset --hard origin/main
+
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml pull || true
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+
+            # Ждём, пока web станет healthy (если healthcheck задан)
+            for i in {1..30}; do
+              status=$(docker compose -f docker-compose.yml -f docker-compose.prod.yml \
+                ps --format json web 2>/dev/null | jq -r '.[0].Health // "none"' 2>/dev/null || echo "none")
+              if [ "$status" = "healthy" ] || [ "$status" = "none" ]; then
+                break
+              fi
+              sleep 2
+            done
+
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml \
+              exec -T web python manage.py migrate --noinput
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml \
+              exec -T web python manage.py collectstatic --noinput || true
+
+            docker image prune -f
