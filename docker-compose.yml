@@ -28,8 +28,6 @@ services:
     command: celery -A config worker --loglevel=info
     env_file:
       - .env
-    volumes:
-      - .:/app
     depends_on:
       redis:
         condition: service_healthy
@@ -40,12 +38,22 @@ services:
     command: celery -A config beat --loglevel=info
     env_file:
       - .env
-    volumes:
-      - .:/app
     depends_on:
       redis:
         condition: service_healthy
       db:
+        condition: service_healthy
+  web:
+    build: .
+    command: gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 3
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
 volumes:
   postgres_data:
