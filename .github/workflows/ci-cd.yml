@@ -81,14 +81,19 @@ jobs:
               if [ "$status" = "healthy" ]; then
                 echo "✅ $svc healthy"
                 break
-              fi            
+              fi
+              if [ "$i" -eq 30 ]; then
+                unhealthy=true
+              fi
               echo "⏳ Waiting... ($i/30)"
               sleep 2
             done
           done
-          echo "::error::Services did not become healthy in 60s"
-          docker compose ps
-          exit 1
+          if [ "$unhealthy" = true ]; then
+            echo "::error::Services did not become healthy in 60s"
+            docker compose ps
+            exit 1
+          fi
 
       # ─────────────────────────────────────────────
       # 4. Миграции + тесты через Django
