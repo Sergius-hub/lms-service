@@ -74,6 +74,7 @@ jobs:
       - name: Wait for db + redis healthy
         run: |
           set -euo pipefail
+          unhealthy=false
           for svc in db redis; do
             for i in {1..30}; do            
               status=$(docker compose ps --format json "$svc" \
