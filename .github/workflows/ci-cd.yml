@@ -107,49 +107,48 @@ jobs:
         if: always()
         run: docker compose down -v --remove-orphans
 
-  deploy:
-    needs: test
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: ${{ secrets.SSH_PORT || 22 }}
-          script_stop: true
-          script: |
-            set -euo pipefail
-            cd ${{ secrets.DEPLOY_PATH }}
-
-            # Проверяем, что прод-.env на месте
-            if [ ! -f .env ]; then
-              echo "❌ .env not found in $(pwd)"
-              echo "Create it manually on the server before first deploy"
-              exit 1
-            fi
-
-            git fetch --all
-            git reset --hard origin/main
-
-            docker compose -f docker-compose.yml -f docker-compose.prod.yml pull || true
-            docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
-
-            # Ждём, пока web станет healthy (если healthcheck задан)
-            for i in {1..30}; do
-              status=$(docker compose -f docker-compose.yml -f docker-compose.prod.yml \
-                ps --format json web 2>/dev/null | jq -r '.[0].Health // "none"' 2>/dev/null || echo "none")
-              if [ "$status" = "healthy" ] || [ "$status" = "none" ]; then
-                break
-              fi
-              sleep 2
-            done
-
-            docker compose -f docker-compose.yml -f docker-compose.prod.yml \
-              exec -T web python manage.py migrate --noinput
-            docker compose -f docker-compose.yml -f docker-compose.prod.yml \
-              exec -T web python manage.py collectstatic --noinput || true
-
-            docker image prune -f
+#  deploy:
+#    needs: test
+#    runs-on: ubuntu-latest
+#    steps:
+#      - name: Deploy via SSH
+#        uses: appleboy/ssh-action@v1
+#        with:
+#          host: ${{ secrets.SSH_HOST }}
+#          username: ${{ secrets.SSH_USER }}
+#          key: ${{ secrets.SSH_PRIVATE_KEY }}
+#          port: ${{ secrets.SSH_PORT || 22 }}
+#          script_stop: true
+#          script: |
+#            set -euo pipefail
+#            cd ${{ secrets.DEPLOY_PATH }}
+#
+#            # Проверяем, что прод-.env на месте
+#            if [ ! -f .env ]; then
+#              echo "❌ .env not found in $(pwd)"
+#              echo "Create it manually on the server before first deploy"
+#              exit 1
+#            fi
+#
+#            git fetch --all
+#            git reset --hard origin/main
+#
+#            docker compose -f docker-compose.yml -f docker-compose.prod.yml pull || true
+#            docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+#
+#            # Ждём, пока web станет healthy (если healthcheck задан)
+#            for i in {1..30}; do
+#              status=$(docker compose -f docker-compose.yml -f docker-compose.prod.yml \
+#                ps --format json web 2>/dev/null | jq -r '.[0].Health // "none"' 2>/dev/null || echo "none")
+#              if [ "$status" = "healthy" ] || [ "$status" = "none" ]; then
+#                break
+#              fi
+#              sleep 2
+#            done
+#
+#            docker compose -f docker-compose.yml -f docker-compose.prod.yml \
+#              exec -T web python manage.py migrate --noinput
+#            docker compose -f docker-compose.yml -f docker-compose.prod.yml \
+#              exec -T web python manage.py collectstatic --noinput || true
+#
+#            docker image prune -f
