@@ -4,3 +4,35 @@ lms-service
 ```bash
 git clone https://github.com/Sergius-hub/lms-service.git
 ```
+
+### Настройка
+```.env
+# Ключ для криптографических операций Django
+DJANGO_SECRET_KEY=<>
+# Базы данных
+POSTGRES_DB=<>
+POSTGRES_USER=<>
+POSTGRES_PASSWORD=<>
+POSTGRES_HOST=localhost
+POSTGRES_PORT=5432
+# Обратная связь
+EMAIL_HOST=<>
+EMAIL_PORT=<>
+EMAIL_USE_TLS=False
+EMAIL_USE_SSL=True
+EMAIL_HOST_USER=<>
+EMAIL_HOST_PASSWORD=<>
+DEFAULT_FROM_EMAIL=<>
+# Кэширование
+CACHE_LOCATION=redis://127.0.0.1:6379/1
+# Stripe
+STRIPE_SECRET_KEY=0
+STRIPE_WEBHOOK_SECRET=0
+# Redis
+REDIS_PASSWORD=<>
+```
+
+### Запуск 
+```bash
+docker compose up -d --build
+```
