@@ -182,8 +182,7 @@ jobs:
             unhealthy=false
             for svc in db redis; do
               for i in {1..30}; do            
-                status=$(docker compose ps --format json "$svc" \
-                  | jq -rs 'flatten | (.[0].Health // "none") | if .=="" then "none" else . end')
+                status=$(docker compose ps --format '{{.Health}}' "$svc")          
                 if [ "$status" = "healthy" ]; then
                   echo "✅ $svc healthy"
                   break
