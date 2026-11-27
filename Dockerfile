@@ -2,6 +2,9 @@
 # Используем официальный slim-образ Python 3.14
 FROM python:3.14-slim AS builder
 
+# Сначала меняем зеркало
+RUN sed -i 's|deb.debian.org|mirror.yandex.ru|g' /etc/apt/sources.list.d/debian.sources
+
 # Системные зависимости для сборки
 RUN apt-get -o Acquire::ForceIPv4=true update && apt-get install -y \
     gcc \
@@ -20,6 +23,9 @@ RUN pip wheel --no-cache-dir --wheel-dir /wheels -r requirements.txt
 
 # --- Этап 2: Финальный (Runtime) ---
 FROM python:3.14-slim
+
+# Сначала меняем зеркало
+RUN sed -i 's|deb.debian.org|mirror.yandex.ru|g' /etc/apt/sources.list.d/debian.sources
 
 # ВАЖНО: для psycopg в рантайме нужна библиотека libpq (не -dev!)
 RUN apt-get -o Acquire::ForceIPv4=true update && apt-get install -y \
