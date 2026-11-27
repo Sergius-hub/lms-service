@@ -1,10 +1,10 @@
 name: CI/CD Django + Compose
 
-on:
-  push:
-    branches: [main, develop]
-  pull_request:
-    branches: [main, develop]
+on: [push, pull_request]
+#  push:
+#    branches: [main, develop]
+#  pull_request:
+#    branches: [main, develop]
 
 env:
   COMPOSE_FILE: docker-compose.yml
@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       # ─────────────────────────────────────────────
       # 1. Генерируем .env с уникальными паролями
@@ -116,49 +116,91 @@ jobs:
         if: always()
         run: docker compose down -v --remove-orphans
 
-#  deploy:
-#    needs: test
+  deploy:
+    name: Deploy to server (rsync)
+    runs-on: ubuntu-latest
+    needs: test
 #    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-#    runs-on: ubuntu-latest
-#    steps:
-#      - name: Deploy via SSH
-#        uses: appleboy/ssh-action@v1
-#        with:
-#          host: ${{ secrets.SSH_HOST }}
-#          username: ${{ secrets.SSH_USER }}
-#          key: ${{ secrets.SSH_PRIVATE_KEY }}
-#          port: ${{ secrets.SSH_PORT || 22 }}
-#          script_stop: true
-#          script: |
-#            set -euo pipefail
-#            cd ${{ secrets.DEPLOY_PATH }}
-#
-#            # Проверяем, что прод-.env на месте
-#            if [ ! -f .env ]; then
-#              echo "❌ .env not found in $(pwd)"
-#              echo "Create it manually on the server before first deploy"
-#              exit 1
-#            fi
-#
-#            git fetch --all
-#            git reset --hard origin/main
-#
-#            docker compose -f docker-compose.yml -f docker-compose.prod.yml pull || true
-#            docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
-#
-#            # Ждём, пока web станет healthy (если healthcheck задан)
-#            for i in {1..30}; do
-#              status=$(docker compose -f docker-compose.yml -f docker-compose.prod.yml \
-#                ps --format json web 2>/dev/null | jq -r '.[0].Health // "none"' 2>/dev/null || echo "none")
-#              if [ "$status" = "healthy" ] || [ "$status" = "none" ]; then
-#                break
-#              fi
-#              sleep 2
-#            done
-#
-#            docker compose -f docker-compose.yml -f docker-compose.prod.yml \
-#              exec -T web python manage.py migrate --noinput
-#            docker compose -f docker-compose.yml -f docker-compose.prod.yml \
-#              exec -T web python manage.py collectstatic --noinput || true
-#
-#            docker image prune -f
+    concurrency:
+      group: ci-${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H -p 2236 -t ed25519 ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Ensure remote directory exists
+        run: |
+          ssh -p 2236 ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
+          "mkdir -p /home/${{ secrets.SERVER_USER }}/deploy/apps/lms-service"
+
+      - name: Sync files via rsync
+        run: |
+          rsync -avz --delete \
+            -e 'ssh -p 2236' \
+            --exclude='.git' \
+            --exclude='.env' \
+            --exclude='secrets' \
+            --exclude='__pycache__' \
+            --exclude='*.pyc' \
+            --exclude='.venv' \
+            --exclude='node_modules' \
+            --exclude='media' \
+            --exclude='staticfiles' \
+            ./ ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/home/${{ secrets.SERVER_USER }}/deploy/apps/lms-service/
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          script_stop: true
+          script: |
+            set -euo pipefail
+            cd /home/${{ secrets.SERVER_USER }}/deploy/apps/lms-service
+
+            # Проверяем, что прод-.env на месте
+            if [ ! -f .env ]; then
+              echo "❌ .env not found in $(pwd)"
+              echo "Create it manually on the server before first deploy"
+              exit 1
+            fi
+
+            docker compose -f docker-compose.yml build --builder dns-fixed
+            docker compose -f docker-compose.yml up -d
+            
+            unhealthy=false
+            for svc in db redis; do
+              for i in {1..30}; do            
+                status=$(docker compose ps --format '{{.Health}}' "$svc")          
+                if [ "$status" = "healthy" ]; then
+                  echo "✅ $svc healthy"
+                  break
+                fi
+                if [ "$i" -eq 30 ]; then
+                  unhealthy=true
+                fi
+                echo "⏳ Waiting... ($i/30)"
+                sleep 2
+              done
+            done
+            if [ "$unhealthy" = true ]; then
+              echo "::error::Services did not become healthy in 60s"
+              docker compose ps
+              exit 1
+            fi
+            
+            docker compose exec -T web python manage.py migrate --noinput
+            docker compose exec -T web python manage.py collectstatic --noinput
+            echo "Deployed at $(date)"
+
+            docker image prune -f || echo "⚠️ Prune skipped"
