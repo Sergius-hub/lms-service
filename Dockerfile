@@ -1,6 +1,6 @@
 # --- Этап 1: Сборщик (Builder) ---
 # Используем официальный slim-образ Python 3.14
-FROM python:3.14-slim AS builder
+FROM python:3.14-slim-bookworm AS builder
 
 # Системные зависимости для сборки
 RUN apt-get update && apt-get install -y \
@@ -19,7 +19,7 @@ COPY requirements.txt .
 RUN pip wheel --no-cache-dir --wheel-dir /wheels -r requirements.txt
 
 # --- Этап 2: Финальный (Runtime) ---
-FROM python:3.14-slim
+FROM python:3.14-slim-bookworm
 
 # ВАЖНО: для psycopg в рантайме нужна библиотека libpq (не -dev!)
 RUN apt-get update && apt-get install -y \
