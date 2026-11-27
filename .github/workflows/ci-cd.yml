@@ -176,7 +176,31 @@ jobs:
               exit 1
             fi
 
-            docker compose -f docker-compose.yml up -d --build
+            docker compose -f docker-compose.yml build --builder dns-fixed
+            docker compose -f docker-compose.yml up -d
+            
+            unhealthy=false
+            for svc in db redis; do
+              for i in {1..30}; do            
+                status=$(docker compose ps --format json "$svc" \
+                  | jq -rs 'flatten | (.[0].Health // "none") | if .=="" then "none" else . end')
+                if [ "$status" = "healthy" ]; then
+                  echo "✅ $svc healthy"
+                  break
+                fi
+                if [ "$i" -eq 30 ]; then
+                  unhealthy=true
+                fi
+                echo "⏳ Waiting... ($i/30)"
+                sleep 2
+              done
+            done
+            if [ "$unhealthy" = true ]; then
+              echo "::error::Services did not become healthy in 60s"
+              docker compose ps
+              exit 1
+            fi
+            
             docker compose exec -T web python manage.py migrate --noinput
             docker compose exec -T web python manage.py collectstatic --noinput
             echo "Deployed at $(date)"
