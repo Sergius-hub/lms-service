@@ -131,7 +131,7 @@ jobs:
           chmod 700 ~/.ssh
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
+          ssh-keyscan -H -p 2236 -t ed25519 ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
 
       - name: Sunc files via rsync
         run: |
