@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       # ─────────────────────────────────────────────
       # 1. Генерируем .env с уникальными паролями
@@ -126,7 +126,7 @@ jobs:
       cancel-in-progress: false
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup SSH
         run: |
@@ -141,7 +141,7 @@ jobs:
           ssh -p 2236 ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
           "mkdir -p /home/${{ secrets.SERVER_USER }}/deploy/apps/lms-service"
 
-      - name: Sunc files via rsync
+      - name: Sync files via rsync
         run: |
           rsync -avz --delete \
             -e 'ssh -p 2236' \
