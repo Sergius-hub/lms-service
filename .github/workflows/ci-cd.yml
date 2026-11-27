@@ -203,4 +203,4 @@ jobs:
             docker compose exec -T web python manage.py collectstatic --noinput
             echo "Deployed at $(date)"
 
-            docker image prune -f
+            docker image prune -f || echo "⚠️ Prune skipped"
