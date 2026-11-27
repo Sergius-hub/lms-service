@@ -137,6 +137,11 @@ jobs:
           chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan -H -p 2236 -t ed25519 ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
 
+      - name: Ensure remote directory exists
+        run: |
+          ssh -p 2236 ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
+          "mkdir -p /home/deploy/apps/lms-service"
+
       - name: Sunc files via rsync
         run: |
           rsync -avz --delete \
