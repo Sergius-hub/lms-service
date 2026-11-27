@@ -36,3 +36,5 @@ REDIS_PASSWORD=<>
 ```bash
 docker compose up -d --build
 ```
+
+### Тест
