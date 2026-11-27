@@ -6,6 +6,10 @@ on: [push, pull_request]
 #  pull_request:
 #    branches: [main, develop]
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   COMPOSE_FILE: docker-compose.yml
   COMPOSE_PROJECT_NAME: django_ci
@@ -136,6 +140,7 @@ jobs:
       - name: Sunc files via rsync
         run: |
           rsync -avz --delete \
+            -e 'ssh -p 2236' \
             --exclude='.git' \
             --exclude='.env' \
             --exclude='secrets' \
